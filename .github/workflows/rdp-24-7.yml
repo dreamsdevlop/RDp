@@ -65,11 +65,17 @@ jobs:
           # Go to: Settings → Secrets → Actions → New repository secret
           # Get auth key from: https://login.tailscale.com/admin/settings/keys
           if [ -n "${{ secrets.TAILSCALE_AUTH_KEY }}" ]; then
-            sudo tailscale up --authkey="${{ secrets.TAILSCALE_AUTH_KEY }}" --hostname="github-rdp-${{ github.run_number }}"
-            echo "✅ Tailscale connected successfully!"
-            TAILSCALE_IP=$(tailscale ip -4)
-            echo "TAILSCALE_IP=$TAILSCALE_IP" >> $GITHUB_ENV
-            echo "🔐 Tailscale IP: $TAILSCALE_IP"
+            if sudo tailscale up --authkey="${{ secrets.TAILSCALE_AUTH_KEY }}" --hostname="github-rdp-${{ github.run_number }}"; then
+              echo "✅ Tailscale connected successfully!"
+              TAILSCALE_IP=$(tailscale ip -4)
+              echo "TAILSCALE_IP=$TAILSCALE_IP" >> $GITHUB_ENV
+              echo "🔐 Tailscale IP: $TAILSCALE_IP"
+            else
+              echo "⚠️ Tailscale authentication failed (invalid or expired key)."
+              echo "   Generate new key: https://login.tailscale.com/admin/settings/keys"
+              echo "   Update secret: https://github.com/dreamsdevlop/RDp/settings/secrets/actions"
+              echo "   Continuing without Tailscale (Cloudflare tunnels still work)"
+            fi
           else
             echo "⚠️ TAILSCALE_AUTH_KEY not set in repository secrets"
             echo "   Tailscale will not be activated (Cloudflare tunnels will still work)"
@@ -180,7 +186,11 @@ jobs:
               sudo tailscaled --state=/var/lib/tailscale/tailscaled.state &
               sleep 2
               if [ -n "${{ secrets.TAILSCALE_AUTH_KEY }}" ]; then
-                sudo tailscale up --authkey="${{ secrets.TAILSCALE_AUTH_KEY }}" --hostname="github-rdp-${{ github.run_number }}"
+                if sudo tailscale up --authkey="${{ secrets.TAILSCALE_AUTH_KEY }}" --hostname="github-rdp-${{ github.run_number }}"; then
+                  echo "✅ Tailscale reconnected"
+                else
+                  echo "⚠️ Tailscale reconnect failed, continuing"
+                fi
               fi
             fi
             
