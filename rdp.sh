@@ -76,24 +76,13 @@ for i in {1..60}; do
   sleep 30
 done || echo "⚠️ Ports not ready after 30min - check docker logs windows"
 
-echo "=== 🔧 RDP NLA/Firewall disable + enable ==="
-docker exec windows powershell -Command "
-netsh advfirewall set allprofiles state off;
-Set-ItemProperty -Path 'HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server' -name 'fDenyTSConnections' -Value 0;
-Set-ItemProperty -Path 'HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp' -name 'UserAuthentication' -Value 0;
-Restart-Service TermService -Force
-"
+# Note: RDP is enabled by default in the image. Manual NLA disable via docker exec is not supported/needed.
+
 
 sleep 60
 
-echo "Waiting RDP listener..."
-for attempt in {1..10}; do
-  if docker exec windows powershell \"netstat -an | findstr :3389\" 2>/dev/null | grep -q LISTENING; then
-    echo "✅ RDP listening!"
-    break
-  fi
-  sleep 30
-done
+# Waiting for RDP service to be fully ready
+
 
 echo
 echo "=== ☁️ Instalasi Cloudflare Tunnel ==="
