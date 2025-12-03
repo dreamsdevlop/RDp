@@ -53,9 +53,9 @@ services:
     cap_add:
       - NET_ADMIN
     ports:
-      - "8006:8006"
-      - "3389:3389/tcp"
-      - "3389:3389/udp"
+      - "0.0.0.0:8006:8006"
+      - "0.0.0.0:3389:3389/tcp"
+      - "0.0.0.0:3389:3389/udp"
     volumes:
       - /tmp/windows-storage:/storage
     restart: always
