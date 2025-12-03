@@ -1,4 +1,5 @@
 name: 24/7 Live RDP
+# Refreshed to clear stale lints
 
 on:
   workflow_dispatch:
@@ -51,6 +52,8 @@ jobs:
           cloudflared --version
 
       - name: 🔐 Install and Setup Tailscale
+        env:
+          TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
         run: |
           echo "=== Installing Tailscale ==="
           curl -fsSL https://tailscale.com/install.sh | sh
@@ -64,8 +67,8 @@ jobs:
           # Note: You need to set TAILSCALE_AUTH_KEY in repository secrets
           # Go to: Settings → Secrets → Actions → New repository secret
           # Get auth key from: https://login.tailscale.com/admin/settings/keys
-          if [ -n "${{ secrets.TAILSCALE_AUTH_KEY }}" ]; then
-            if sudo tailscale up --authkey="${{ secrets.TAILSCALE_AUTH_KEY }}" --hostname="github-rdp-${{ github.run_number }}"; then
+          if [ -n "$TAILSCALE_AUTH_KEY" ]; then
+            if sudo tailscale up --authkey="$TAILSCALE_AUTH_KEY" --hostname="github-rdp-${{ github.run_number }}"; then
               echo "✅ Tailscale connected successfully!"
               TAILSCALE_IP=$(tailscale ip -4)
               echo "TAILSCALE_IP=$TAILSCALE_IP" >> $GITHUB_ENV
@@ -166,6 +169,8 @@ jobs:
           echo "- **Password:** admin@123" >> $GITHUB_STEP_SUMMARY
 
       - name: 🔄 Keep Alive (Run for ~5.5 hours)
+        env:
+          TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
         run: |
           echo "=== Entering Keep-Alive Mode ==="
           echo "This will run for approximately 5.5 hours before auto-restart"
@@ -192,8 +197,8 @@ jobs:
               echo "⚠️ Tailscale daemon stopped! Restarting..."
               sudo tailscaled --state=/var/lib/tailscale/tailscaled.state &
               sleep 2
-              if [ -n "${{ secrets.TAILSCALE_AUTH_KEY }}" ]; then
-                if sudo tailscale up --authkey="${{ secrets.TAILSCALE_AUTH_KEY }}" --hostname="github-rdp-${{ github.run_number }}"; then
+              if [ -n "$TAILSCALE_AUTH_KEY" ]; then
+                if sudo tailscale up --authkey="$TAILSCALE_AUTH_KEY" --hostname="github-rdp-${{ github.run_number }}"; then
                   echo "✅ Tailscale reconnected"
                 else
                   echo "⚠️ Tailscale reconnect failed, continuing"
