@@ -45,6 +45,7 @@ services:
       RAM_SIZE: "2G"
       CPU_CORES: "1"
     shm_size: 1g
+    privileged: true
     ports:
       - "0.0.0.0:8006:8006"
       - "0.0.0.0:3389:3389/tcp"
