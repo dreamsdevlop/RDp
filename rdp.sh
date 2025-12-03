@@ -45,9 +45,9 @@ services:
       VERSION: "11"
       USERNAME: "MASTER"
       PASSWORD: "admin@123"
-      RAM_SIZE: "4G"
-      CPU_CORES: "2"
-    shm_size: 2g
+      RAM_SIZE: "2G"
+      CPU_CORES: "1"
+    shm_size: 1g
     devices:
       $KVM_CONFIG
       - /dev/net/tun
@@ -71,6 +71,17 @@ cat windows.yml
 echo
 echo "=== 🚀 Menjalankan Windows 11 container ==="
 docker compose -f windows.yml up -d
+
+echo "⏳ Waiting for Windows ports 8006(NoVNC)/3389(RDP) ready..."
+
+for i in {1..60}; do
+  if (echo > /dev/tcp/localhost/8006) >/dev/null 2>&1 && (echo > /dev/tcp/localhost/3389) >/dev/null 2>&1; then
+    echo "✅ Ports ready after ${i}x30s!"
+    break
+  fi
+  echo "Still booting... ($i/60)"
+  sleep 30
+done || echo "⚠️ Ports not ready after 30min - check docker logs windows"
 
 echo
 echo "=== ☁️ Instalasi Cloudflare Tunnel ==="
@@ -140,3 +151,4 @@ while true; do
       nohup cloudflared tunnel --url tcp://localhost:3389 > /var/log/cloudflared_rdp.log 2>&1 &
   fi
 done
+
