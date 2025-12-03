@@ -50,6 +50,34 @@ jobs:
           fi
           cloudflared --version
 
+      - name: 🔐 Install and Setup Tailscale
+        run: |
+          echo "=== Installing Tailscale ==="
+          curl -fsSL https://tailscale.com/install.sh | sh
+          
+          echo "=== Starting Tailscale Daemon ==="
+          sudo mkdir -p /var/lib/tailscale
+          sudo tailscaled --state=/var/lib/tailscale/tailscaled.state &
+          sleep 3
+          
+          echo "=== Connecting to Tailscale Network ==="
+          # Note: You need to set TAILSCALE_AUTH_KEY in repository secrets
+          # Go to: Settings → Secrets → Actions → New repository secret
+          # Get auth key from: https://login.tailscale.com/admin/settings/keys
+          if [ -n "${{ secrets.TAILSCALE_AUTH_KEY }}" ]; then
+            sudo tailscale up --authkey="${{ secrets.TAILSCALE_AUTH_KEY }}" --hostname="github-rdp-${{ github.run_number }}"
+            echo "✅ Tailscale connected successfully!"
+            TAILSCALE_IP=$(tailscale ip -4)
+            echo "TAILSCALE_IP=$TAILSCALE_IP" >> $GITHUB_ENV
+            echo "🔐 Tailscale IP: $TAILSCALE_IP"
+          else
+            echo "⚠️ TAILSCALE_AUTH_KEY not set in repository secrets"
+            echo "   Tailscale will not be activated (Cloudflare tunnels will still work)"
+            echo "   To enable Tailscale:"
+            echo "   1. Get auth key from: https://login.tailscale.com/admin/settings/keys"
+            echo "   2. Add to: Settings → Secrets → Actions → TAILSCALE_AUTH_KEY"
+          fi
+
       - name: 🖥️ Deploy Windows 11 RDP
         run: |
           echo "=== Starting RDP Deployment ==="
@@ -80,9 +108,18 @@ jobs:
           echo "🌍 Web Console (NoVNC):"
           echo "   $CF_WEB"
           echo ""
-          echo "🖥️  RDP Access:"
+          echo "🖥️  RDP Access (Cloudflare):"
           echo "   $CF_RDP"
           echo ""
+          
+          # Display Tailscale IP if available
+          if [ -n "$TAILSCALE_IP" ]; then
+            echo "🔐 RDP Access (Tailscale VPN):"
+            echo "   $TAILSCALE_IP:3389"
+            echo "   (Connect via Tailscale network)"
+            echo ""
+          fi
+          
           echo "🔑 Credentials:"
           echo "   Username: MASTER"
           echo "   Password: admin@123"
@@ -96,11 +133,21 @@ jobs:
           echo "$CF_WEB" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🖥️ RDP Access" >> $GITHUB_STEP_SUMMARY
+          echo "### 🖥️ RDP Access (Cloudflare)" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "$CF_RDP" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -n "$TAILSCALE_IP" ]; then
+            echo "### 🔐 RDP Access (Tailscale VPN)" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "$TAILSCALE_IP:3389" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "Connect via Tailscale network for secure VPN access" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
           echo "### 🔑 Credentials" >> $GITHUB_STEP_SUMMARY
           echo "- **Username:** MASTER" >> $GITHUB_STEP_SUMMARY
           echo "- **Password:** admin@123" >> $GITHUB_STEP_SUMMARY
@@ -127,6 +174,16 @@ jobs:
               sudo nohup cloudflared tunnel --url tcp://localhost:3389 > /var/log/cloudflared_rdp.log 2>&1 &
             fi
             
+            # Check if Tailscale daemon is running
+            if ! pgrep -x "tailscaled" > /dev/null; then
+              echo "⚠️ Tailscale daemon stopped! Restarting..."
+              sudo tailscaled --state=/var/lib/tailscale/tailscaled.state &
+              sleep 2
+              if [ -n "${{ secrets.TAILSCALE_AUTH_KEY }}" ]; then
+                sudo tailscale up --authkey="${{ secrets.TAILSCALE_AUTH_KEY }}" --hostname="github-rdp-${{ github.run_number }}"
+              fi
+            fi
+            
             # Display status every 10 minutes
             REMAINING=$((($END_TIME - $(date +%s)) / 60))
             echo "✅ Status: Running | Time remaining: ${REMAINING} minutes"
@@ -134,6 +191,12 @@ jobs:
             # Show current connections
             echo "📊 Docker Status:"
             sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            
+            # Show Tailscale status if connected
+            if pgrep -x "tailscaled" > /dev/null; then
+              echo "🔐 Tailscale Status:"
+              sudo tailscale status || echo "   Not connected"
+            fi
             
             sleep 600  # Check every 10 minutes
           done
