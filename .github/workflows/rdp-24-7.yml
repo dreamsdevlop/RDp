@@ -91,9 +91,9 @@ jobs:
           RDP_PID=$!
           echo "RDP_PID=$RDP_PID" >> $GITHUB_ENV
           
-          # Wait for Windows container to fully boot (first run takes 10-20 minutes without KVM acceleration on GitHub runners)
-          echo "⏳ Waiting 15 minutes for Windows boot and services..."
-          sleep 900
+          # Initial wait for services (reduce if too slow)
+          echo "⏳ Waiting 5 minutes for initial boot..."
+          sleep 300
           
           echo "=== Checking Docker Status ==="
           sudo docker ps -a
