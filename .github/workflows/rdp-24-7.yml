@@ -91,11 +91,18 @@ jobs:
           RDP_PID=$!
           echo "RDP_PID=$RDP_PID" >> $GITHUB_ENV
           
-          # Wait for services to initialize
-          sleep 120
+          # Wait for Windows container to fully boot (first run takes 10-20 minutes without KVM acceleration on GitHub runners)
+          echo "⏳ Waiting 15 minutes for Windows boot and services..."
+          sleep 900
           
           echo "=== Checking Docker Status ==="
           sudo docker ps -a
+          
+          echo "=== Windows Container Logs (last 20 lines) ==="
+          sudo docker logs windows --tail 20 || echo "No logs (container may not be ready)"
+          
+          echo "=== Host Ports 8006/3389 ==="
+          sudo ss -tlnp | grep -E ':(8006|3389)' || echo "No listeners on RDP/NoVNC ports yet - still booting"
           
           echo "=== Checking Cloudflare Tunnels ==="
           sudo cat /var/log/cloudflared_web.log || echo "Web log not found yet"
