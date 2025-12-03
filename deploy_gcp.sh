@@ -18,12 +18,19 @@ IMAGE_FAMILY="ubuntu-2204-lts"
 IMAGE_PROJECT="ubuntu-os-cloud"
 
 # Get current project ID
-PROJECT_ID=$(gcloud config get-value project)
+PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
 
 if [ -z "$PROJECT_ID" ]; then
-  echo "❌ No Google Cloud Project selected."
-  echo "Run: gcloud config set project [YOUR_PROJECT_ID]"
-  exit 1
+  echo "⚠️  No Google Cloud Project selected."
+  echo "Please enter your Google Cloud Project ID (e.g., my-project-123):"
+  read -r USER_PROJECT_ID
+  if [ -n "$USER_PROJECT_ID" ]; then
+    gcloud config set project "$USER_PROJECT_ID"
+    PROJECT_ID="$USER_PROJECT_ID"
+  else
+    echo "❌ Project ID is required."
+    exit 1
+  fi
 fi
 
 echo "=== 🚀 Deploying to Google Cloud Project: $PROJECT_ID ==="
