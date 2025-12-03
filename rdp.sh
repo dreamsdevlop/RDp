@@ -12,9 +12,9 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo
-echo "=== 📦 Update & Install Docker Compose ==="
+echo "=== 📦 Update & Install Docker ==="
 apt update -y
-apt install docker-compose -y
+apt install -y docker.io
 
 systemctl enable docker
 systemctl start docker
@@ -69,7 +69,7 @@ cat windows.yml
 
 echo
 echo "=== 🚀 Menjalankan Windows 11 container ==="
-docker-compose -f windows.yml up -d
+docker compose -f windows.yml up -d
 
 echo
 echo "=== ☁️ Instalasi Cloudflare Tunnel ==="

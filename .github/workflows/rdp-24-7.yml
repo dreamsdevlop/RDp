@@ -30,14 +30,14 @@ jobs:
         run: |
           echo "=== Docker is pre-installed on GitHub runners ==="
           docker --version
-          docker-compose --version
+          docker compose version
           sudo systemctl start docker
           sudo systemctl enable docker
 
       - name: 📦 Install Dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y docker-compose wget curl
+          sudo apt-get install -y wget curl
 
       - name: 🚀 Make rdp.sh Executable
         run: chmod +x rdp.sh
@@ -164,7 +164,7 @@ jobs:
             if ! sudo docker ps | grep -q windows; then
               echo "⚠️ Windows container stopped! Restarting..."
               cd /root/dockercom
-              sudo docker-compose -f windows.yml up -d
+              sudo docker compose -f windows.yml up -d
             fi
             
             # Check if Cloudflare tunnels are running
