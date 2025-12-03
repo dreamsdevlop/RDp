@@ -45,8 +45,9 @@ services:
       VERSION: "11"
       USERNAME: "MASTER"
       PASSWORD: "admin@123"
-      RAM_SIZE: "7G"
-      CPU_CORES: "4"
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+    shm_size: 2g
     devices:
       $KVM_CONFIG
       - /dev/net/tun
