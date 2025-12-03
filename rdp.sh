@@ -126,3 +126,16 @@ echo "  grep 'trycloudflare' /var/log/cloudflared_*.log"
 echo
 echo "=== ✅ Windows 11 di Docker siap digunakan! ==="
 echo "=============================================="
+
+# Keep Alive Loop (Essential for 24/7 in some environments)
+echo "🔄 Entering Keep-Alive mode..."
+echo "    Press Ctrl+C to stop."
+while true; do
+  sleep 60
+  # Optional: Check if processes are still running and restart if needed
+  if ! pgrep -x "cloudflared" > /dev/null; then
+      echo "⚠️ Cloudflared stopped! Restarting..."
+      nohup cloudflared tunnel --url http://localhost:8006 > /var/log/cloudflared_web.log 2>&1 &
+      nohup cloudflared tunnel --url tcp://localhost:3389 > /var/log/cloudflared_rdp.log 2>&1 &
+  fi
+done
