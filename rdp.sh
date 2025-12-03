@@ -139,6 +139,31 @@ sleep 60
 # Waiting for RDP service to be fully ready
 
 echo
+echo "=== 🔐 Installing Tailscale ==="
+if ! command -v tailscale &> /dev/null; then
+    curl -fsSL https://tailscale.com/install.sh | sh
+else
+    echo "✅ Tailscale is already installed."
+fi
+
+echo
+echo "=== 🔗 Connecting to Tailscale ==="
+# Check if already logged in
+if tailscale status > /dev/null 2>&1; then
+    echo "✅ Already connected to Tailscale."
+else
+    if [ -n "$TAILSCALE_AUTH_KEY" ]; then
+        echo "🔑 Authenticating with provided key..."
+        tailscale up --authkey="$TAILSCALE_AUTH_KEY" --ssh
+    else
+        echo "⚠️  TAILSCALE_AUTH_KEY not found."
+        echo "   To connect manually, run: sudo tailscale up"
+    fi
+fi
+
+TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "")
+
+echo
 echo "=== ☁️ Installing Cloudflare Tunnel ==="
 if [ ! -f "/usr/local/bin/cloudflared" ]; then
   wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O /usr/local/bin/cloudflared
@@ -174,6 +199,15 @@ if [ -n "$CF_RDP" ]; then
   echo "    ${CF_RDP}"
 else
   echo "⚠️ RDP Link not found (Check logs)"
+fi
+
+if [ -n "$TAILSCALE_IP" ]; then
+  echo
+  echo "🔐 Tailscale IP (Internal RDP):"
+  echo "    ${TAILSCALE_IP}:3389"
+else
+  echo
+  echo "⚠️ Tailscale not connected (or no IP found)"
 fi
 
 echo
