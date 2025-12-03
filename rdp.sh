@@ -12,12 +12,9 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo
-echo "=== 📦 Update & Install Docker ==="
-apt update -y
-apt install -y docker.io
+echo "=== 📦 Docker pre-installed on GitHub runner ==="
 
-systemctl enable docker
-systemctl start docker
+# No need to install - already available
 
 echo
 echo "=== 📂 Membuat direktori kerja dockercom ==="
