@@ -26,7 +26,16 @@ cd /root/dockercom
 
 echo
 echo "=== 🧾 Membuat file windows.yml ==="
-cat > windows.yml <<'EOF'
+# Cek KVM
+if [ -e /dev/kvm ]; then
+  echo "✅ KVM detected (Performance optimized)"
+  KVM_CONFIG="- /dev/kvm"
+else
+  echo "⚠️  KVM NOT detected! Windows will be very slow."
+  KVM_CONFIG=""
+fi
+
+cat > windows.yml <<EOF
 version: "3.9"
 services:
   windows:
@@ -39,7 +48,7 @@ services:
       RAM_SIZE: "7G"
       CPU_CORES: "4"
     devices:
-      - /dev/kvm
+      $KVM_CONFIG
       - /dev/net/tun
     cap_add:
       - NET_ADMIN
