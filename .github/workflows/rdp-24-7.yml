@@ -1,0 +1,149 @@
+name: 24/7 Live RDP
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+  schedule:
+    # Re-trigger every 5 hours to maintain 24/7 uptime
+    - cron: '0 */5 * * *'
+
+jobs:
+  rdp-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350  # Just under 6 hours (GitHub's limit)
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Environment
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          echo "=== Available Resources ==="
+          nproc
+          free -h
+          df -h
+
+      - name: 🐳 Setup Docker
+        run: |
+          echo "=== Docker is pre-installed on GitHub runners ==="
+          docker --version
+          docker-compose --version
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      - name: 📦 Install Dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y docker-compose wget curl
+
+      - name: 🚀 Make rdp.sh Executable
+        run: chmod +x rdp.sh
+
+      - name: 🌐 Install Cloudflare Tunnel
+        run: |
+          if [ ! -f "/usr/local/bin/cloudflared" ]; then
+            sudo wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O /usr/local/bin/cloudflared
+            sudo chmod +x /usr/local/bin/cloudflared
+          fi
+          cloudflared --version
+
+      - name: 🖥️ Deploy Windows 11 RDP
+        run: |
+          echo "=== Starting RDP Deployment ==="
+          sudo bash rdp.sh &
+          RDP_PID=$!
+          echo "RDP_PID=$RDP_PID" >> $GITHUB_ENV
+          
+          # Wait for services to initialize
+          sleep 120
+          
+          echo "=== Checking Docker Status ==="
+          sudo docker ps -a
+          
+          echo "=== Checking Cloudflare Tunnels ==="
+          sudo cat /var/log/cloudflared_web.log || echo "Web log not found yet"
+          sudo cat /var/log/cloudflared_rdp.log || echo "RDP log not found yet"
+
+      - name: 📊 Display Access Information
+        run: |
+          echo "=========================================="
+          echo "🎉 RDP Server is Running!"
+          echo "=========================================="
+          
+          # Extract Cloudflare URLs
+          CF_WEB=$(sudo grep -o "https://[a-zA-Z0-9.-]*\.trycloudflare\.com" /var/log/cloudflared_web.log 2>/dev/null | head -n 1 || echo "Initializing...")
+          CF_RDP=$(sudo grep -o "tcp://[a-zA-Z0-9.-]*\.trycloudflare\.com:[0-9]*" /var/log/cloudflared_rdp.log 2>/dev/null | head -n 1 || echo "Initializing...")
+          
+          echo "🌍 Web Console (NoVNC):"
+          echo "   $CF_WEB"
+          echo ""
+          echo "🖥️  RDP Access:"
+          echo "   $CF_RDP"
+          echo ""
+          echo "🔑 Credentials:"
+          echo "   Username: MASTER"
+          echo "   Password: admin@123"
+          echo "=========================================="
+          
+          # Save to GitHub Step Summary
+          echo "## 🎉 RDP Server Active" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🌍 Web Console (NoVNC)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$CF_WEB" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🖥️ RDP Access" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$CF_RDP" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔑 Credentials" >> $GITHUB_STEP_SUMMARY
+          echo "- **Username:** MASTER" >> $GITHUB_STEP_SUMMARY
+          echo "- **Password:** admin@123" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔄 Keep Alive (Run for ~5.5 hours)
+        run: |
+          echo "=== Entering Keep-Alive Mode ==="
+          echo "This will run for approximately 5.5 hours before auto-restart"
+          
+          END_TIME=$(($(date +%s) + 19800))  # 5.5 hours = 19800 seconds
+          
+          while [ $(date +%s) -lt $END_TIME ]; do
+            # Check if Docker container is running
+            if ! sudo docker ps | grep -q windows; then
+              echo "⚠️ Windows container stopped! Restarting..."
+              cd /root/dockercom
+              sudo docker-compose -f windows.yml up -d
+            fi
+            
+            # Check if Cloudflare tunnels are running
+            if ! pgrep -x "cloudflared" > /dev/null; then
+              echo "⚠️ Cloudflared stopped! Restarting..."
+              sudo nohup cloudflared tunnel --url http://localhost:8006 > /var/log/cloudflared_web.log 2>&1 &
+              sudo nohup cloudflared tunnel --url tcp://localhost:3389 > /var/log/cloudflared_rdp.log 2>&1 &
+            fi
+            
+            # Display status every 10 minutes
+            REMAINING=$((($END_TIME - $(date +%s)) / 60))
+            echo "✅ Status: Running | Time remaining: ${REMAINING} minutes"
+            
+            # Show current connections
+            echo "📊 Docker Status:"
+            sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            
+            sleep 600  # Check every 10 minutes
+          done
+          
+          echo "=== Session ending, workflow will auto-restart via cron ==="
+
+      - name: 📝 Cleanup on Failure
+        if: failure()
+        run: |
+          echo "=== Collecting failure logs ==="
+          sudo docker logs windows || true
+          sudo cat /var/log/cloudflared_web.log || true
+          sudo cat /var/log/cloudflared_rdp.log || true
