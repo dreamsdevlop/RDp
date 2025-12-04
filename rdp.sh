@@ -53,10 +53,30 @@ echo
 echo "=== 🔋 Disabling Windows Sleep/Hibernate ==="
 mkdir -p oem
 cat > oem/install.bat <<EOF
+@echo off
+REM Disable power saving
 powercfg /change monitor-timeout-ac 0
 powercfg /change standby-timeout-ac 0
 powercfg /change hibernate-timeout-ac 0
 powercfg /h off
+
+REM Optimize RDP for stability and performance
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v SecurityLayer /t REG_DWORD /d 0 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v KeepAliveTimeout /t REG_DWORD /d 1 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v KeepAliveInterval /t REG_DWORD /d 1 /f
+
+REM Disable NLA for easier connection
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f
+
+REM Set high performance power plan
+powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+
+REM Ensure user account is active
+net user MASTER admin@123 /active:yes
+
+echo RDP Optimizations Complete
 EOF
 
 echo
@@ -178,14 +198,38 @@ if tailscale status > /dev/null 2>&1; then
 else
     if [ -n "$TAILSCALE_AUTH_KEY" ]; then
         echo "🔑 Authenticating with provided key..."
-        tailscale up --authkey="$TAILSCALE_AUTH_KEY" --ssh
+        tailscale up --authkey="$TAILSCALE_AUTH_KEY" --ssh --accept-routes --accept-dns=false
+        
+        # Wait for Tailscale to fully connect
+        echo "⏳ Waiting for Tailscale connection..."
+        for i in {1..10}; do
+            if tailscale status > /dev/null 2>&1; then
+                echo "✅ Tailscale connected successfully!"
+                break
+            fi
+            sleep 2
+        done
     else
         echo "⚠️  TAILSCALE_AUTH_KEY not found."
         echo "   To connect manually, run: sudo tailscale up"
     fi
 fi
 
-TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "")
+# Get Tailscale IP with retry
+TAILSCALE_IP=""
+for i in {1..5}; do
+    TAILSCALE_IP=$(tailscale ip -4 2>/dev/null)
+    if [ -n "$TAILSCALE_IP" ]; then
+        break
+    fi
+    sleep 1
+done
+
+if [ -n "$TAILSCALE_IP" ]; then
+    echo "✅ Tailscale IP acquired: $TAILSCALE_IP"
+else
+    echo "⚠️  Could not get Tailscale IP (may not be connected)"
+fi
 
 echo
 echo "=== ☁️ Installing Cloudflare Tunnel ==="
@@ -237,19 +281,28 @@ fi
 
 if [ -n "$TAILSCALE_IP" ]; then
   echo
-  echo "🔐 Tailscale IP (Internal RDP):"
-  echo "    ${TAILSCALE_IP}:3389"
+  echo "🔐 Tailscale RDP (RECOMMENDED for downloads):"
+  echo "    IP: ${TAILSCALE_IP}:3389"
+  echo "    Use native RDP client (Windows: mstsc, Mac: Microsoft Remote Desktop)"
+  echo "    ✅ Best for: Large downloads, stable connection, no timeouts"
 else
   echo
-  echo "⚠️ Tailscale not connected (or no IP found)"
+  echo "⚠️ Tailscale not connected"
+  echo "   Set TAILSCALE_AUTH_KEY to enable direct RDP access"
 fi
 
 echo
-echo "🔑 Username: MASTER"
-echo "🔒 Password: admin@123"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔑 LOGIN CREDENTIALS:"
+echo "   Username: MASTER"
+echo "   Password: admin@123"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo
-echo "To view logs: docker logs -f windows"
-echo "To stop: docker stop windows"
+echo "💡 TIPS:"
+echo "   • For 40GB+ downloads: Use Tailscale RDP"
+echo "   • For quick access: Use Cloudflare links"
+echo "   • Logs: docker logs -f windows"
+echo "   • Stop: docker stop windows"
 echo
 echo "=== ✅ Windows 11 is Ready! ==="
 echo "=============================================="
