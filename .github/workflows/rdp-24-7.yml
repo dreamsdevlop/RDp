@@ -1,5 +1,5 @@
-name: 24/7 Live RDP
-# Refreshed to clear stale lints
+name: 24/7 Live RDP (Pausable)
+# Control this workflow with the RDP_ENABLED variable
 
 on:
   workflow_dispatch:
@@ -10,7 +10,26 @@ on:
     - cron: '0 */5 * * *'
 
 jobs:
+  check-status:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.enabled }}
+    steps:
+      - name: Check if RDP is enabled
+        id: check
+        run: |
+          # Check if RDP_ENABLED variable is set to 'true' (default: true if not set)
+          if [ "${{ vars.RDP_ENABLED }}" = "false" ]; then
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "🛑 RDP is PAUSED (RDP_ENABLED=false)"
+          else
+            echo "enabled=true" >> $GITHUB_OUTPUT
+            echo "✅ RDP is ENABLED"
+          fi
+
   rdp-server:
+    needs: check-status
+    if: needs.check-status.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 350  # Just under 6 hours (GitHub's limit)
     
