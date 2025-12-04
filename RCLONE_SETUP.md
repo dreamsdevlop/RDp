@@ -1,4 +1,7 @@
-# 💾 Smart Data Backup Setup
+# 💾 Smart Data Backup Setup (OPTIONAL)
+
+> **This is completely optional!** The RDP works perfectly without Rclone.
+> Only set this up if you want to keep files between workflow restarts.
 
 This project supports automatic backup of your RDP data to Google Drive, OneDrive, Dropbox, etc. using **Rclone**.
 

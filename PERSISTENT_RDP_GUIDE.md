@@ -1,14 +1,19 @@
 # 🔐 Persistent RDP Setup Guide
 
+> **Note**: Rclone backup is **OPTIONAL**. The RDP works perfectly without it!
+> - ✅ **Without Rclone**: RDP works, but files are lost every 5 hours (when workflow restarts)
+> - ✅ **With Rclone**: RDP works + files persist forever in cloud storage
+
 ## Your Setup
 - **Tailscale IP**: `100.91.158.105:3389` (stays the same across all workflow runs)
 - **Credentials**: `MASTER` / `admin@123`
 
-## ✅ What's Already Working
+## ✅ What's Already Working (No Setup Required)
 1. **Same IP Every Time** - Tailscale state is cached, so `100.91.158.105` persists
 2. **Auto-Reconnect** - Workflow triggers every 5 hours to maintain 24/7 uptime
+3. **Full RDP Access** - Connect and use Windows normally
 
-## 💾 Enable Data Persistence (IMPORTANT!)
+## 💾 Optional: Enable Data Persistence
 
 To keep your files, downloads, and settings between workflow runs, you MUST set up Rclone:
 
