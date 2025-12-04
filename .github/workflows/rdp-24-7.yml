@@ -121,10 +121,13 @@ jobs:
           sudo cat /var/log/cloudflared_rdp.log || echo "RDP log not found yet"
 
       - name: 💾 Setup Smart Backup (Rclone)
-        if: secrets.RCLONE_CONFIG != ''
         env:
           RCLONE_CONFIG: ${{ secrets.RCLONE_CONFIG }}
         run: |
+          if [ -z "$RCLONE_CONFIG" ]; then
+            echo "ℹ️ RCLONE_CONFIG secret not set. Skipping backup setup."
+            exit 0
+          fi
           echo "=== Installing Rclone ==="
           sudo -v ; curl https://rclone.org/install.sh | sudo bash
           
