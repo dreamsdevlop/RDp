@@ -50,6 +50,16 @@ mkdir -p /root/dockercom
 cd /root/dockercom
 
 echo
+echo "=== 🔋 Disabling Windows Sleep/Hibernate ==="
+mkdir -p oem
+cat > oem/install.bat <<EOF
+powercfg /change monitor-timeout-ac 0
+powercfg /change standby-timeout-ac 0
+powercfg /change hibernate-timeout-ac 0
+powercfg /h off
+EOF
+
+echo
 echo "=== ⚙️  Calculating Resources ==="
 # Get total RAM in GB (rounded down)
 TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
@@ -107,7 +117,9 @@ services:
       - "3389:3389/tcp"
       - "3389:3389/udp"
     volumes:
+    volumes:
       - /tmp/windows-storage:/storage
+      - /root/dockercom/oem:/oem
     restart: always
     stop_grace_period: 2m
     ${KVM_DEVICES}
@@ -230,6 +242,15 @@ while true; do
       echo "⚠️ Cloudflared stopped! Restarting..."
       nohup cloudflared tunnel --url http://localhost:8006 > /var/log/cloudflared_web.log 2>&1 &
       nohup cloudflared tunnel --url tcp://localhost:3389 > /var/log/cloudflared_rdp.log 2>&1 &
+  fi
+  
+  if ! pgrep -x "tailscaled" > /dev/null; then
+      echo "⚠️ Tailscale stopped! Restarting..."
+      sudo tailscaled --state=/var/lib/tailscale/tailscaled.state &
+      sleep 2
+      if [ -n "$TAILSCALE_AUTH_KEY" ]; then
+         tailscale up --authkey="$TAILSCALE_AUTH_KEY" --ssh
+      fi
   fi
 done
 
