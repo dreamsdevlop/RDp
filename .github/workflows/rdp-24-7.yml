@@ -121,7 +121,7 @@ jobs:
           sudo cat /var/log/cloudflared_rdp.log || echo "RDP log not found yet"
 
       - name: 💾 Setup Smart Backup (Rclone)
-        if: ${{ secrets.RCLONE_CONFIG != '' }}
+        if: secrets.RCLONE_CONFIG != ''
         env:
           RCLONE_CONFIG: ${{ secrets.RCLONE_CONFIG }}
         run: |
