@@ -98,6 +98,8 @@ services:
       PASSWORD: "admin@123"
       RAM_SIZE: "${VM_RAM_GB}G"
       CPU_CORES: "${VM_CORES}"
+      ARGUMENTS: "-cpu host"
+    privileged: true
     cap_add:
       - NET_ADMIN
     ports:

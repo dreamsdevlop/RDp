@@ -40,8 +40,8 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y wget curl
 
-      - name: 🚀 Make rdp.sh Executable
-        run: chmod +x rdp.sh
+      - name: 🚀 Make Scripts Executable
+        run: chmod +x rdp.sh backup.sh
 
       - name: 🌐 Install Cloudflare Tunnel
         run: |
@@ -119,6 +119,23 @@ jobs:
           echo "=== Checking Cloudflare Tunnels ==="
           sudo cat /var/log/cloudflared_web.log || echo "Web log not found yet"
           sudo cat /var/log/cloudflared_rdp.log || echo "RDP log not found yet"
+
+      - name: 💾 Setup Smart Backup (Rclone)
+        if: ${{ secrets.RCLONE_CONFIG != '' }}
+        env:
+          RCLONE_CONFIG: ${{ secrets.RCLONE_CONFIG }}
+        run: |
+          echo "=== Installing Rclone ==="
+          sudo -v ; curl https://rclone.org/install.sh | sudo bash
+          
+          echo "=== Configuring Rclone ==="
+          mkdir -p $HOME/.config/rclone
+          echo "$RCLONE_CONFIG" > $HOME/.config/rclone/rclone.conf
+          
+          echo "=== Starting Backup Service ==="
+          # Run as root to access the shared volume
+          sudo bash backup.sh &
+          echo "✅ Backup service started in background"
 
       - name: 📊 Display Access Information
         run: |
