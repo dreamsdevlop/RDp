@@ -139,19 +139,19 @@ echo "⏳ Waiting for Windows ports 8006(NoVNC)/3389(RDP) ready..."
 echo "   This may take 5-10 minutes on the first boot."
 
 for i in {1..60}; do
-  if (echo > /dev/tcp/localhost/8006) >/dev/null 2>&1 && (echo > /dev/tcp/localhost/3389) >/dev/null 2>&1; then
-    echo "✅ Ports ready after ${i}x30s!"
+  # Check if NoVNC is actually responding (not just port open)
+  if curl -s -o /dev/null -w "%{http_code}" http://localhost:8006 | grep -q "200\|301\|302" && \
+     (echo > /dev/tcp/localhost/3389) >/dev/null 2>&1; then
+    echo "✅ Services ready after ${i}x30s!"
     break
   fi
   echo "Still booting... ($i/60)"
   sleep 30
-done || echo "⚠️ Ports not ready after 30min - check docker logs windows"
+done || echo "⚠️ Services not ready after 30min - check docker logs windows"
 
-# Note: RDP is enabled by default in the image.
-
-sleep 60
-
-# Waiting for RDP service to be fully ready
+# Additional wait for Windows to fully stabilize
+echo "⏳ Waiting for Windows to fully stabilize..."
+sleep 30
 
 echo
 echo "=== 🔐 Installing Tailscale ==="
