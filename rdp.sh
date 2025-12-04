@@ -117,10 +117,11 @@ services:
       - "3389:3389/tcp"
       - "3389:3389/udp"
     volumes:
-    volumes:
       - /tmp/windows-storage:/storage
       - /root/dockercom/oem:/oem
-    restart: always
+    mem_limit: ${VM_RAM_GB}G
+    memswap_limit: ${VM_RAM_GB}G
+    restart: unless-stopped
     stop_grace_period: 2m
     ${KVM_DEVICES}
 
@@ -191,10 +192,20 @@ pkill -f cloudflared || true
 
 nohup cloudflared tunnel --url http://localhost:8006 > /var/log/cloudflared_web.log 2>&1 &
 nohup cloudflared tunnel --url tcp://localhost:3389 > /var/log/cloudflared_rdp.log 2>&1 &
-sleep 10
 
-CF_WEB=$(grep -o "https://[a-zA-Z0-9.-]*\.trycloudflare\.com" /var/log/cloudflared_web.log | head -n 1)
-CF_RDP=$(grep -o "tcp://[a-zA-Z0-9.-]*\.trycloudflare\.com:[0-9]*" /var/log/cloudflared_rdp.log | head -n 1)
+echo "⏳ Waiting for Cloudflare tunnels to initialize..."
+CF_WEB=""
+CF_RDP=""
+for i in {1..30}; do
+  CF_WEB=$(grep -o "https://[a-zA-Z0-9.-]*\.trycloudflare\.com" /var/log/cloudflared_web.log 2>/dev/null | head -n 1)
+  CF_RDP=$(grep -o "tcp://[a-zA-Z0-9.-]*\.trycloudflare\.com:[0-9]*" /var/log/cloudflared_rdp.log 2>/dev/null | head -n 1)
+  
+  if [ -n "$CF_WEB" ] && [ -n "$CF_RDP" ]; then
+    echo "✅ Cloudflare tunnels ready after ${i}s!"
+    break
+  fi
+  sleep 1
+done
 
 echo
 echo "=============================================="
