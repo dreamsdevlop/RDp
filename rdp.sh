@@ -82,6 +82,14 @@ fi
 echo "   Host RAM: ${TOTAL_RAM_GB} GB | VM RAM: ${VM_RAM_GB} GB"
 echo "   Host CPU: ${TOTAL_CORES} Cores | VM CPU: ${VM_CORES} Cores"
 
+# Check available disk space
+AVAILABLE_DISK_GB=$(df /tmp | tail -1 | awk '{print int($4/1024/1024)}')
+echo "   Available Disk: ${AVAILABLE_DISK_GB} GB"
+if [ "$AVAILABLE_DISK_GB" -lt 50 ]; then
+    echo "   ⚠️  Warning: Low disk space! Large downloads (>40GB) may fail."
+    echo "   Recommendation: Free up space or use Rclone backup to cloud."
+fi
+
 echo
 echo "=== 🧾 Generating windows.yml ==="
 # Check KVM
@@ -121,7 +129,7 @@ services:
       - /root/dockercom/oem:/oem
     mem_limit: ${VM_RAM_GB}G
     memswap_limit: $((${VM_RAM_GB} * 2))G
-    shm_size: 2G
+    shm_size: 4G
     restart: unless-stopped
     stop_grace_period: 2m
     ${KVM_DEVICES}
