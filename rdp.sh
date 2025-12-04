@@ -120,7 +120,8 @@ services:
       - /tmp/windows-storage:/storage
       - /root/dockercom/oem:/oem
     mem_limit: ${VM_RAM_GB}G
-    memswap_limit: ${VM_RAM_GB}G
+    memswap_limit: $((${VM_RAM_GB} * 2))G
+    shm_size: 2G
     restart: unless-stopped
     stop_grace_period: 2m
     ${KVM_DEVICES}
