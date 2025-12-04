@@ -51,6 +51,15 @@ jobs:
           fi
           cloudflared --version
 
+      - name: 💾 Restore Tailscale State
+        id: tailscale-cache
+        uses: actions/cache@v3
+        with:
+          path: /var/lib/tailscale
+          key: tailscale-state-live
+          restore-keys: |
+            tailscale-state-live
+
       - name: 🔐 Install and Setup Tailscale
         env:
           TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
@@ -68,7 +77,7 @@ jobs:
           # Go to: Settings → Secrets → Actions → New repository secret
           # Get auth key from: https://login.tailscale.com/admin/settings/keys
           if [ -n "$TAILSCALE_AUTH_KEY" ]; then
-            if sudo tailscale up --authkey="$TAILSCALE_AUTH_KEY" --hostname="github-rdp-${{ github.run_number }}"; then
+            if sudo tailscale up --authkey="$TAILSCALE_AUTH_KEY" --hostname="github-rdp-live" --ssh; then
               echo "✅ Tailscale connected successfully!"
               TAILSCALE_IP=$(tailscale ip -4)
               echo "TAILSCALE_IP=$TAILSCALE_IP" >> $GITHUB_ENV
@@ -198,7 +207,7 @@ jobs:
               sudo tailscaled --state=/var/lib/tailscale/tailscaled.state &
               sleep 2
               if [ -n "$TAILSCALE_AUTH_KEY" ]; then
-                if sudo tailscale up --authkey="$TAILSCALE_AUTH_KEY" --hostname="github-rdp-${{ github.run_number }}"; then
+                if sudo tailscale up --authkey="$TAILSCALE_AUTH_KEY" --hostname="github-rdp-live" --ssh; then
                   echo "✅ Tailscale reconnected"
                 else
                   echo "⚠️ Tailscale reconnect failed, continuing"
