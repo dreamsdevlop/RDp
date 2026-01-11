@@ -182,41 +182,39 @@ jobs:
       - name: 📝 Generate Deployment Report
         if: always()
         run: |
-          {
-            echo "## 🎙️ VibeVoice Colab Workflow Deployment Report"
-            echo ""
-            echo "### 📅 Deployment Information"
-            echo "- **Model**: ${{ github.event.inputs.model_path || 'microsoft/VibeVoice-1.5B' }}"
-            echo "- **Inference Steps**: ${{ github.event.inputs.inference_steps || '10' }}"
-            echo "- **GPU Enabled**: ${{ github.event.inputs.enable_gpu || 'true' }}"
-            echo "- **Share URL**: ${{ github.event.inputs.share_url || 'true' }}"
-            echo "- **Drive Save**: ${{ github.event.inputs.enable_drive_save || 'false' }}"
-            echo ""
-            echo "### 🔗 Access Information"
-            echo "The Gradio UI should be accessible via the workflow logs."
-            echo "Look for the line: 'Running on public URL: https://...'"
-            echo ""
-            echo "### 📋 Colab Commands Executed:"
-            echo "\`\`\`bash"
-            echo "# Install dependencies"
-            echo "pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu"
-            echo "pip install gradio==4.25.0"
-            echo "pip install pydub>=0.25.1"
-            echo ""
-            echo "# Clone and setup VibeVoice"
-            echo "git clone https://github.com/microsoft/VibeVoice.git"
-            echo "cd VibeVoice && pip install -e ."
-            echo ""
-            echo "# Run VibeVoice Podcast"
-            echo "python demo/colab.py --model_path microsoft/VibeVoice-1.5B --inference_steps 10 --debug --share"
-            echo "\`\`\`"
-            echo ""
-            echo "### ⚠️ Important Notes"
-            echo "- This workflow runs for a maximum of 2 hours (GitHub Actions limit)"
-            echo "- For longer uptime, consider using self-hosted runners"
-            echo "- Always follow the usage guidelines and legal requirements"
-            echo "- Google Drive integration requires manual setup in Colab environment"
-          } >> $GITHUB_STEP_SUMMARY
+          echo "## 🎙️ VibeVoice Colab Workflow Deployment Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📅 Deployment Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Model**: ${{ github.event.inputs.model_path || 'microsoft/VibeVoice-1.5B' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Inference Steps**: ${{ github.event.inputs.inference_steps || '10' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **GPU Enabled**: ${{ github.event.inputs.enable_gpu || 'true' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Share URL**: ${{ github.event.inputs.share_url || 'true' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Drive Save**: ${{ github.event.inputs.enable_drive_save || 'false' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Access Information" >> $GITHUB_STEP_SUMMARY
+          echo "The Gradio UI should be accessible via the workflow logs." >> $GITHUB_STEP_SUMMARY
+          echo "Look for the line: 'Running on public URL: https://...'" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Colab Commands Executed:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Install dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu" >> $GITHUB_STEP_SUMMARY
+          echo "pip install gradio==4.25.0" >> $GITHUB_STEP_SUMMARY
+          echo "pip install pydub>=0.25.1" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Clone and setup VibeVoice" >> $GITHUB_STEP_SUMMARY
+          echo "git clone https://github.com/microsoft/VibeVoice.git" >> $GITHUB_STEP_SUMMARY
+          echo "cd VibeVoice && pip install -e ." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Run VibeVoice Podcast" >> $GITHUB_STEP_SUMMARY
+          echo "python demo/colab.py --model_path microsoft/VibeVoice-1.5B --inference_steps 10 --debug --share" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚠️ Important Notes" >> $GITHUB_STEP_SUMMARY
+          echo "- This workflow runs for a maximum of 2 hours (GitHub Actions limit)" >> $GITHUB_STEP_SUMMARY
+          echo "- For longer uptime, consider using self-hosted runners" >> $GITHUB_STEP_SUMMARY
+          echo "- Always follow the usage guidelines and legal requirements" >> $GITHUB_STEP_SUMMARY
+          echo "- Google Drive integration requires manual setup in Colab environment" >> $GITHUB_STEP_SUMMARY
 
       - name: 🧹 Cleanup
         if: always()
