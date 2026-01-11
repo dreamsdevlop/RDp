@@ -196,7 +196,7 @@ jobs:
           echo "Look for the line: 'Running on public URL: https://...'" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📋 Colab Commands Executed:" >> $GITHUB_STEP_SUMMARY
-          echo "```bash" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "# Install dependencies" >> $GITHUB_STEP_SUMMARY
           echo "pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu" >> $GITHUB_STEP_SUMMARY
           echo "pip install gradio==4.25.0" >> $GITHUB_STEP_SUMMARY
@@ -208,7 +208,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Run VibeVoice Podcast" >> $GITHUB_STEP_SUMMARY
           echo "python demo/colab.py --model_path microsoft/VibeVoice-1.5B --inference_steps 10 --debug --share" >> $GITHUB_STEP_SUMMARY
-          echo "```" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ⚠️ Important Notes" >> $GITHUB_STEP_SUMMARY
           echo "- This workflow runs for a maximum of 2 hours (GitHub Actions limit)" >> $GITHUB_STEP_SUMMARY
