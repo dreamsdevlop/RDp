@@ -1,0 +1,170 @@
+name: 🎙️ VibeVoice Gradio UI
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_path:
+        description: 'Model path (Hugging Face repo)'
+        required: false
+        default: 'microsoft/VibeVoice-1.5B'
+        type: string
+      inference_steps:
+        description: 'Number of inference steps'
+        required: false
+        default: '10'
+        type: string
+      enable_gpu:
+        description: 'Enable GPU acceleration'
+        required: false
+        default: true
+        type: boolean
+      share_url:
+        description: 'Generate public share URL'
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    # Optional: Daily health check at 2 AM UTC
+    - cron: '0 2 * * *'
+  repository_dispatch:
+    types: [vibevoice-deploy]
+
+concurrency:
+  group: vibevoice-gradio
+  cancel-in-progress: true
+
+jobs:
+  setup-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Environment
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          echo "=== Python Version ==="
+          python3 --version
+          echo "=== Available Memory ==="
+          free -h
+          echo "=== Disk Space ==="
+          df -h
+
+      - name: 🐍 Setup Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: 📦 Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libsndfile1
+          sudo apt-get clean
+
+      - name: 📥 Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install gradio transformers accelerate safetensors pydub numpy scipy
+          pip install huggingface_hub requests tqdm
+
+      - name: 🎙️ Setup VibeVoice
+        run: |
+          echo "=== Cloning VibeVoice Repository ==="
+          git clone https://github.com/microsoft/VibeVoice.git
+          cd VibeVoice
+          pip install -e .
+          
+          echo "=== Creating VibeVoice App Directory ==="
+          mkdir -p ../app
+          mkdir -p ../scripts
+          mkdir -p ../docs
+
+      - name: 💾 Cache Model Weights
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/huggingface
+          key: vibevoice-model-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            vibevoice-model-
+
+      - name: 🚀 Launch VibeVoice Gradio UI
+        run: |
+          echo "=== Starting VibeVoice Gradio UI ==="
+          
+          # Set environment variables
+          export MODEL_PATH="${{ github.event.inputs.model_path || 'microsoft/VibeVoice-1.5B' }}"
+          export INFERENCE_STEPS="${{ github.event.inputs.inference_steps || '10' }}"
+          export ENABLE_GPU="${{ github.event.inputs.enable_gpu || 'true' }}"
+          export SHARE_URL="${{ github.event.inputs.share_url || 'true' }}"
+          
+          # Launch the application
+          cd VibeVoice
+          python demo/gradio_demo.py \
+            --model_path "$MODEL_PATH" \
+            --inference_steps "$INFERENCE_STEPS" \
+            --share \
+            --server_name "0.0.0.0" \
+            --server_port 7860 \
+            --debug &
+          
+          # Store process ID for cleanup
+          echo $! > /tmp/gradio_pid
+          
+          echo "=== Waiting for Gradio to start ==="
+          sleep 30
+          
+          # Check if the server is running
+          if ! kill -0 $(cat /tmp/gradio_pid) 2>/dev/null; then
+            echo "❌ Gradio server failed to start"
+            exit 1
+          fi
+          
+          echo "✅ Gradio server is running"
+          echo "🌐 Public URL will be available in the logs"
+
+      - name: 📊 Monitor Service Health
+        run: |
+          echo "=== Starting Health Monitoring ==="
+          
+          # Monitor the Gradio process
+          while kill -0 $(cat /tmp/gradio_pid) 2>/dev/null; do
+            echo "✅ Gradio server is healthy"
+            sleep 300  # Check every 5 minutes
+          done
+          
+          echo "❌ Gradio server stopped"
+          exit 1
+
+      - name: 📝 Generate Deployment Report
+        if: always()
+        run: |
+          echo "## 🎙️ VibeVoice Gradio UI Deployment Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📅 Deployment Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Model**: ${{ github.event.inputs.model_path || 'microsoft/VibeVoice-1.5B' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Inference Steps**: ${{ github.event.inputs.inference_steps || '10' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **GPU Enabled**: ${{ github.event.inputs.enable_gpu || 'true' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Share URL**: ${{ github.event.inputs.share_url || 'true' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Access Information" >> $GITHUB_STEP_SUMMARY
+          echo "The Gradio UI should be accessible via the workflow logs." >> $GITHUB_STEP_SUMMARY
+          echo "Look for the line: 'Running on public URL: https://...'" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚠️ Important Notes" >> $GITHUB_STEP_SUMMARY
+          echo "- This workflow runs for a maximum of 2 hours (GitHub Actions limit)" >> $GITHUB_STEP_SUMMARY
+          echo "- For longer uptime, consider using self-hosted runners" >> $GITHUB_STEP_SUMMARY
+          echo "- Always follow the usage guidelines and legal requirements" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          echo "=== Cleaning up processes ==="
+          if [ -f /tmp/gradio_pid ]; then
+            kill $(cat /tmp/gradio_pid) 2>/dev/null || true
+            rm -f /tmp/gradio_pid
+          fi

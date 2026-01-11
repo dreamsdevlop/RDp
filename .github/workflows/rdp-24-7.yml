@@ -79,6 +79,15 @@ jobs:
           restore-keys: |
             tailscale-state-live
 
+      - name: 💾 Restore Persistent Storage
+        id: storage-cache
+        uses: actions/cache@v3
+        with:
+          path: /tmp/github-cache
+          key: rdp-storage-${{ github.run_id }}
+          restore-keys: |
+            rdp-storage-
+
       - name: 🔐 Install and Setup Tailscale
         env:
           TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}

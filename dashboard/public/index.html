@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24/7 RDP Monitoring Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --bg-color: #f8f9fa;
+            --text-color: #333;
+            --card-bg: #fff;
+            --border-color: #dee2e6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-running {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-stopped {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-healthy {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-cloud-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-cache-only {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .logs-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .connection-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .connection-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .connection-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .connection-url {
+            font-family: monospace;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            word-break: break-all;
+        }
+
+        .footer {
+            text-align: center;
+            color: #6c757d;
+            margin-top: 2rem;
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .refresh-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>🖥️ 24/7 RDP Monitoring Dashboard</h1>
+    </header>
+
+    <div class="container">
+        <!-- System Overview -->
+        <div class="grid">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">System Health</span>
+                    <span id="last-update" class="status-badge">Last Update: --</span>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-label">Docker Status</div>
+                        <div class="metric-value" id="docker-status">Checking...</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Cloudflare Tunnels</div>
+                        <div class="metric-value" id="cloudflare-status">Checking...</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Tailscale VPN</div>
+                        <div class="metric-value" id="tailscale-status">Checking...</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Storage Usage</div>
+                        <div class="metric-value" id="storage-status">Checking...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Backup Status</span>
+                    <span id="backup-status" class="status-badge">Checking...</span>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-label">Last Sync</div>
+                        <div class="metric-value" id="last-sync">Never</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Storage Used</div>
+                        <div class="metric-value" id="storage-used">0 GB</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Sync Status</div>
+                        <div class="metric-value" id="sync-status">Unknown</div>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div id="storage-progress" class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Information -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Access Information</span>
+                <span class="refresh-indicator"></span>
+            </div>
+            <div class="connection-info">
+                <div class="connection-card">
+                    <div class="connection-title">🌐 Web Console (NoVNC)</div>
+                    <div class="connection-url" id="web-console-url">Loading...</div>
+                </div>
+                <div class="connection-card">
+                    <div class="connection-title">🖥️ RDP via Cloudflare</div>
+                    <div class="connection-url" id="rdp-cloudflare-url">Loading...</div>
+                </div>
+                <div class="connection-card">
+                    <div class="connection-title">🔐 RDP via Tailscale</div>
+                    <div class="connection-url" id="rdp-tailscale-url">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">System Logs</span>
+                <span class="status-badge">Real-time Updates</span>
+            </div>
+            <div id="logs-container" class="logs-container">
+                Loading logs...
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>🔄 Real-time monitoring dashboard for 24/7 Windows RDP server</p>
+        <p>Auto-refreshes every 30 seconds • WebSocket connection: <span id="ws-status">Connecting...</span></p>
+    </div>
+
+    <script>
+        // WebSocket connection
+        const ws = new WebSocket(`ws://${window.location.host}`);
+        let wsConnected = false;
+
+        ws.onopen = () => {
+            wsConnected = true;
+            document.getElementById('ws-status').textContent = 'Connected';
+            document.getElementById('ws-status').style.color = '#28a745';
+        };
+
+        ws.onclose = () => {
+            wsConnected = false;
+            document.getElementById('ws-status').textContent = 'Disconnected';
+            document.getElementById('ws-status').style.color = '#dc3545';
+        };
+
+        ws.onerror = () => {
+            wsConnected = false;
+            document.getElementById('ws-status').textContent = 'Error';
+            document.getElementById('ws-status').style.color = '#ffc107';
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'update' || data.type === 'initial') {
+                updateDashboard(data.data);
+            }
+        };
+
+        // Update dashboard with new data
+        function updateDashboard(data) {
+            const now = new Date().toLocaleTimeString();
+            document.getElementById('last-update').textContent = `Last Update: ${now}`;
+
+            // Update health status
+            updateHealthStatus(data.health);
+
+            // Update metrics
+            updateMetrics(data.metrics);
+
+            // Update logs
+            fetchLogs();
+        }
+
+        function updateHealthStatus(health) {
+            // Docker status
+            const dockerEl = document.getElementById('docker-status');
+            dockerEl.textContent = health.docker.status;
+            dockerEl.className = `metric-value status-${health.docker.status}`;
+
+            // Cloudflare status
+            const cfEl = document.getElementById('cloudflare-status');
+            cfEl.textContent = `${health.cloudflare.status} (${health.cloudflare.tunnels} tunnels)`;
+            cfEl.className = `metric-value status-${health.cloudflare.status}`;
+
+            // Tailscale status
+            const tsEl = document.getElementById('tailscale-status');
+            tsEl.textContent = `${health.tailscale.status} (${health.tailscale.ip})`;
+            tsEl.className = `metric-value status-${health.tailscale.status}`;
+
+            // Storage status
+            const storageEl = document.getElementById('storage-status');
+            storageEl.textContent = health.storage.status;
+            storageEl.className = `metric-value status-${health.storage.status}`;
+        }
+
+        function updateMetrics(metrics) {
+            // Update backup status badge
+            const statusEl = document.getElementById('backup-status');
+            statusEl.textContent = metrics.status;
+            statusEl.className = `status-badge status-${metrics.status}`;
+
+            // Update last sync
+            const lastSyncEl = document.getElementById('last-sync');
+            lastSyncEl.textContent = metrics.last_sync === 'Never' ? 'Never' :
+                new Date(metrics.last_sync).toLocaleString();
+
+            // Update storage used
+            const storageUsedEl = document.getElementById('storage-used');
+            storageUsedEl.textContent = `${metrics.storage_used_gb.toFixed(2)} GB`;
+
+            // Update sync status
+            const syncStatusEl = document.getElementById('sync-status');
+            syncStatusEl.textContent = metrics.status === 'healthy' ? 'Synced' : 'Syncing...';
+
+            // Update progress bar
+            const progressEl = document.getElementById('storage-progress');
+            const percentage = Math.min((metrics.storage_used_gb / 10) * 100, 100);
+            progressEl.style.width = `${percentage}%`;
+
+            // Update connection URLs (these would come from the workflow)
+            // For now, we'll show placeholder text
+            document.getElementById('web-console-url').textContent = 'https://xxx.trycloudflare.com';
+            document.getElementById('rdp-cloudflare-url').textContent = 'tcp://xxx.trycloudflare.com:xxxxx';
+            document.getElementById('rdp-tailscale-url').textContent = '100.x.x.x:3389';
+        }
+
+        // Fetch logs
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/api/logs');
+                const logs = await response.json();
+                const logsContainer = document.getElementById('logs-container');
+                logsContainer.innerHTML = logs.join('\n');
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+            }
+        }
+
+        // Initial data fetch
+        async function initialFetch() {
+            try {
+                const [metricsResponse, healthResponse] = await Promise.all([
+                    fetch('/api/metrics'),
+                    fetch('/api/health')
+                ]);
+
+                const metrics = await metricsResponse.json();
+                const health = await healthResponse.json();
+
+                updateDashboard({ metrics, health });
+            } catch (error) {
+                console.error('Error fetching initial data:', error);
+            }
+        }
+
+        // Fetch logs initially
+        fetchLogs();
+
+        // Fetch data every 30 seconds as fallback
+        setInterval(initialFetch, 30000);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,25 @@
+{
+    "version": "1.0",
+    "users": {
+        "MASTER": {
+            "password": "admin@123",
+            "role": "admin",
+            "profile_path": "/storage/users/MASTER",
+            "created_at": "2024-01-01T00:00:00Z",
+            "last_login": null,
+            "enabled": true,
+            "storage_quota_gb": 10
+        }
+    },
+    "settings": {
+        "default_role": "user",
+        "default_quota_gb": 5,
+        "max_users": 10,
+        "password_policy": {
+            "min_length": 8,
+            "require_uppercase": true,
+            "require_numbers": true,
+            "require_special": false
+        }
+    }
+}
