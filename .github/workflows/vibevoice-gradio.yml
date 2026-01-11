@@ -125,14 +125,6 @@ jobs:
           
           echo "Application structure created"
 
-      - name: 💾 Cache Model Weights
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/huggingface
-          key: vibevoice-model-${{ hashFiles('requirements-vibevoice.txt') }}
-          restore-keys: |
-            vibevoice-model-
-
       - name: 🚀 Launch VibeVoice Podcast (Colab Commands)
         run: |
           echo "=== Running VibeVoice Podcast (Colab Commands) ==="
