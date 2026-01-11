@@ -1,0 +1,29 @@
+# VibeVoice Colab Dependencies
+# Exact versions from the Colab notebook
+
+# PyTorch with CPU support
+torch==2.0.1
+torchvision==0.15.2
+torchaudio==2.0.2
+
+# Gradio and UI
+gradio==4.25.0
+
+# Transformers and AI
+transformers==4.35.0
+accelerate==0.24.1
+safetensors==0.4.0
+
+# Audio processing
+pydub>=0.25.1
+
+# Scientific computing
+numpy==1.24.3
+scipy==1.11.3
+
+# Hugging Face ecosystem
+huggingface_hub==0.17.3
+
+# Utilities
+requests==2.31.0
+tqdm==4.66.1
