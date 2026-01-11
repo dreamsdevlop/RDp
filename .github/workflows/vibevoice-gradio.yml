@@ -129,7 +129,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/huggingface
-          key: vibevoice-model-${{ hashFiles('**/requirements.txt') }}
+          key: vibevoice-model-${{ hashFiles('requirements-vibevoice.txt') }}
           restore-keys: |
             vibevoice-model-
 
